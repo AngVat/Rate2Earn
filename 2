@@ -1,0 +1,51 @@
+import { useState } from 'react';
+import { ethers } from 'ethers';
+import Rate2EarnABI from './Rate2EarnABI.json';
+
+const contractAddress = "YOUR_CONTRACT_ADDRESS";
+const provider = new ethers.providers.Web3Provider(window.ethereum);
+const signer = provider.getSigner();
+const rate2Earn = new ethers.Contract(contractAddress, Rate2EarnABI, signer);
+
+function App() {
+  const [appName, setAppName] = useState('');
+  const [content, setContent] = useState('');
+  const [rating, setRating] = useState(1);
+
+  const submitReview = async () => {
+    try {
+      const tx = await rate2Earn.submitReview(appName, content, rating);
+      await tx.wait();
+      alert('Review submitted successfully!');
+    } catch (error) {
+      console.error('Error submitting review:', error);
+    }
+  };
+
+  return (
+    <div>
+      <h1>Rate2Earn</h1>
+      <input 
+        type="text" 
+        placeholder="App Name" 
+        value={appName} 
+        onChange={(e) => setAppName(e.target.value)} 
+      />
+      <textarea 
+        placeholder="Review Content" 
+        value={content} 
+        onChange={(e) => setContent(e.target.value)} 
+      />
+      <input 
+        type="number" 
+        min="1" 
+        max="5" 
+        value={rating} 
+        onChange={(e) => setRating(e.target.value)} 
+      />
+      <button onClick={submitReview}>Submit Review</button>
+    </div>
+  );
+}
+
+export default App;
