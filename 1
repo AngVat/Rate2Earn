@@ -1,0 +1,63 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract Rate2Earn is Ownable {
+    struct Review {
+        uint256 id;
+        address reviewer;
+        string appName;
+        string content;
+        uint256 rating;
+        uint256 timestamp;
+    }
+
+    uint256 public reviewCounter;
+    mapping(uint256 => Review) public reviews;
+    mapping(address => uint256[]) public userReviews;
+    IERC20 public rewardToken;
+
+    event ReviewSubmitted(uint256 indexed id, address indexed reviewer, string appName, uint256 rating, uint256 timestamp);
+    event RewardIssued(address indexed reviewer, uint256 amount);
+
+    constructor(address _rewardToken) {
+        rewardToken = IERC20(_rewardToken);
+    }
+
+    function submitReview(string memory _appName, string memory _content, uint256 _rating) public {
+        require(_rating > 0 && _rating <= 5, "Rating must be between 1 and 5");
+
+        reviewCounter++;
+        reviews[reviewCounter] = Review({
+            id: reviewCounter,
+            reviewer: msg.sender,
+            appName: _appName,
+            content: _content,
+            rating: _rating,
+            timestamp: block.timestamp
+        });
+
+        userReviews[msg.sender].push(reviewCounter);
+
+        emit ReviewSubmitted(reviewCounter, msg.sender, _appName, _rating, block.timestamp);
+
+        // Issue reward to the reviewer
+        uint256 rewardAmount = calculateReward(_rating);
+        rewardToken.transfer(msg.sender, rewardAmount);
+        emit RewardIssued(msg.sender, rewardAmount);
+    }
+
+    function calculateReward(uint256 _rating) internal pure returns (uint256) {
+        return _rating * 10 ** 18; // Example reward calculation
+    }
+
+    function getUserReviews(address _user) public view returns (uint256[] memory) {
+        return userReviews[_user];
+    }
+
+    function getReview(uint256 _reviewId) public view returns (Review memory) {
+        return reviews[_reviewId];
+    }
+}
